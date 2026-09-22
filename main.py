@@ -15,7 +15,7 @@ database.init_db()
 
 # Конфигурация из переменных окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
-WEBAPP_URL = "https://monumental-stroopwafel-a20c3f.netlify.app"
+WEBAPP_URL = "https://elaborate-pie-a4fa50.netlify.app"
 BASE_URL = "https://lucky-stars-backend.onrender.com"
 STAR_PRICE_RUB = 1.95  # Стоимость 1 звезды
 
