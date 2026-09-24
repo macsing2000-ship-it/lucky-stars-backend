@@ -3,3 +3,4 @@ uvicorn
 pydantic
 aiogram
 httpx
+psycopg2-binary
