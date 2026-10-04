@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Lucky Stars</title>
+  <meta name="theme-color" content="#0b0914">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0b0914;
+      --bg-2: #130f24;
+      --card-bg: rgba(26, 21, 43, 0.72);
+      --input-bg: rgba(44, 34, 74, 0.55);
+      --accent-yellow: #f5c443;
+      --accent-purple: #a855f7;
+      --accent-purple-2: #7b2cff;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --text-main: #ffffff;
+      --text-muted: #9d94b8;
+      --border-color: rgba(168, 85, 247, 0.22);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --gold-grad: linear-gradient(135deg, #ffe27a 0%, #f5c443 55%, #e8a317 100%);
+      --gold-glow: 0 0 15px rgba(245, 196, 67, 0.4);
+      --purple-grad: linear-gradient(135deg, #8b3dff 0%, #5b1fd1 100%);
+      --purple-glow: 0 0 16px rgba(168, 85, 247, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html { background: var(--bg); }
+
+    body {
+      color: var(--text-main);
+      overflow-x: hidden;
+      padding-bottom: 75px;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(circle at 50% 15%, rgba(168, 85, 247, 0.30), transparent 55%),
+        radial-gradient(circle at 85% 70%, rgba(245, 196, 67, 0.13), transparent 50%),
+        radial-gradient(circle at 10% 85%, rgba(123, 44, 255, 0.18), transparent 50%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    }
+
+    [data-netlify-badge],
+    .netlify-badge,
+    iframe[title*="Netlify"],
+    #netlify-badge,
+    div[style*="z-index: 10000"][style*="position: fixed"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* Верхняя панель баланса */
+    .top-header {
+      padding: 12px 14px 6px;
+      display: flex;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      background: rgba(11, 9, 20, 0.7);
+      backdrop-filter: blur(14px);
+      z-index: 40;
+      border-bottom: 1px solid rgba(168, 85, 247, 0.12);
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      padding: 9px 12px;
+      border-radius: 14px;
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .info-card .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .info-card .val {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .add-btn {
+      background: var(--gold-grad);
+      color: #1a1100;
+      border: none;
+      border-radius: 8px;
+      width: 26px;
+      height: 26px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: var(--gold-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s;
+    }
+
+    .add-btn:active { transform: scale(0.92); }
+
+    /* LIVE-ЛЕНТА ВЫИГРЫШЕЙ */
+    .live-feed-wrapper {
+      padding: 6px 14px 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .live-feed-title {
+      font-size: 10px;
+      color: #34d399;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .live-feed-dot {
+      width: 6px;
+      height: 6px;
+      background: #34d399;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #34d399;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    .live-feed-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 2px;
+    }
+
+    .live-feed-scroll::-webkit-scrollbar { display: none; }
+
+    .live-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 6px 9px;
+      min-width: 84px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      font-size: 11px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    .live-card-icon { font-size: 16px; margin-bottom: 2px; }
+    .live-card-title { font-weight: 800; font-size: 11px; color: var(--accent-yellow); white-space: nowrap; text-shadow: 0 0 8px rgba(245, 196, 67, 0.4); }
+    .live-card-user { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+
+    /* Контейнер 3 страниц */
+    .pages-slider {
+      display: flex;
+      width: 300%;
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .page {
+      width: 33.333%;
+      padding: 4px 14px;
+      min-height: calc(100vh - 165px);
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #b9a9e6;
+      margin: 10px 0 6px;
+      letter-spacing: 0.6px;
+      font-weight: 700;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 13px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .star-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .star-btn {
+      background: var(--input-bg);
+      border: 1px solid rgba(168, 85, 247, 0.18);
+      color: #fff;
+      padding: 10px 2px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .star-btn.active {
+      background: var(--gold-grad);
+      color: #1a1100;
+      border-color: #fcd34d;
+      box-shadow: var(--gold-glow);
+      transform: translateY(-1px);
+    }
+
+    .custom-input-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 11px;
+      padding: 9px 12px;
+    }
+
+    .custom-input-box input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+      outline: none;
+    }
+
+    .chance-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .chance-badge {
+      background: var(--gold-grad);
+      color: #1a1100;
+      font-weight: 800;
+      padding: 2px 9px;
+      border-radius: 14px;
+      font-size: 12px;
+      box-shadow: var(--gold-glow);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent-purple-2), var(--accent-purple) 55%, var(--accent-yellow));
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.45);
+      outline: none;
+      margin: 8px 0 14px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--gold-grad);
+      border: 2px solid #fff3c4;
+      box-shadow: 0 0 12px rgba(245, 196, 67, 0.8);
+      cursor: pointer;
+    }
+
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f5c443;
+      border: 2px solid #fff3c4;
+      box-shadow: 0 0 12px rgba(245, 196, 67, 0.8);
+      cursor: pointer;
+    }
+
+    .preset-chips {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .chip {
+      background: var(--input-bg);
+      border: 1px solid rgba(168, 85, 247, 0.18);
+      color: var(--text-muted);
+      padding: 6px 4px;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      flex: 1;
+      transition: all 0.15s;
+    }
+
+    .chip.active {
+      background: var(--purple-grad);
+      color: #fff;
+      border-color: rgba(168, 85, 247, 0.6);
+      box-shadow: var(--purple-glow);
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 13px;
+    }
+    .price-row.win {
+      color: var(--accent-yellow);
+      font-weight: 800;
+      text-shadow: 0 0 10px rgba(245, 196, 67, 0.3);
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .radio-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radio-item.active .radio-circle {
+      border-color: var(--accent-yellow);
+      box-shadow: 0 0 8px rgba(245, 196, 67, 0.6);
+    }
+    .radio-item.active .radio-circle::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--accent-yellow);
+      border-radius: 50%;
+      box-shadow: 0 0 6px var(--accent-yellow);
+    }
+
+    .recipient-input {
+      display: none;
+      margin-top: 8px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 11px;
+      padding: 9px 12px;
+      color: #fff;
+      width: 100%;
+      outline: none;
+      font-size: 13px;
+    }
+
+    .play-btn {
+      width: 100%;
+      background: var(--gold-grad);
+      color: #1a1100;
+      font-size: 15px;
+      font-weight: 800;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: var(--gold-glow);
+      transition: transform .12s, box-shadow .2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .play-btn:active { transform: scale(0.98); }
+
+    .play-btn.deposit-mode {
+      background: rgba(44, 34, 74, 0.6);
+      color: #fff;
+      border: 1px solid var(--accent-yellow);
+      box-shadow: var(--gold-glow);
+    }
+
+    /* Магазин */
+    .shop-banner {
+      background: linear-gradient(135deg, rgba(123, 44, 255, 0.28), rgba(245, 196, 67, 0.10));
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .shop-banner-icon { font-size: 34px; filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.5)); }
+    .shop-banner-text h3 { font-size: 15px; font-weight: 800; margin-bottom: 2px; color: #fff; }
+    .shop-banner-text p { font-size: 11px; color: #d8b4fe; line-height: 1.3; }
+
+    .gifts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .gift-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .gift-emoji { font-size: 40px; margin-bottom: 4px; filter: drop-shadow(0 0 6px rgba(255,255,255,0.2)); }
+    .gift-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+    .gift-stars-val { font-size: 11px; color: var(--accent-yellow); margin-bottom: 8px; font-weight: 600; }
+
+    .gift-buy-btn {
+      width: 100%;
+      background: var(--input-bg);
+      color: #fff;
+      border: 1px solid var(--border-color);
+      padding: 8px 0;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .gift-buy-btn.can-afford {
+      background: var(--purple-grad);
+      border-color: rgba(168, 85, 247, 0.7);
+      color: #fff;
+      box-shadow: var(--purple-glow);
+    }
+
+    /* Рефералы */
+    .ref-banner {
+      background: linear-gradient(135deg, rgba(6, 78, 59, 0.7), rgba(15, 23, 42, 0.8));
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .ref-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .ref-stat-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+      box-shadow: var(--glass-shadow);
+    }
+
+    .ref-stat-card .val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--accent-yellow);
+      margin-top: 4px;
+      text-shadow: 0 0 10px rgba(245, 196, 67, 0.3);
+    }
+
+    .ref-link-box {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 11px;
+      padding: 10px;
+      font-size: 11px;
+      color: #c084fc;
+      word-break: break-all;
+      margin: 8px 0;
+    }
+
+    /* Канал для рефералов */
+    .channel-req-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--glass-shadow);
+    }
+    .channel-req-icon { font-size: 28px; }
+    .channel-req-text h4 { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .channel-req-text p { font-size: 10px; color: #93c5fd; line-height: 1.3; margin-bottom: 6px; }
+    .channel-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Нижняя панель */
+    .tabbar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 58px;
+      background: rgba(14, 10, 28, 0.85);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(168, 85, 247, 0.28);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+      box-shadow: 0 -6px 24px rgba(123, 44, 255, 0.15);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 600;
+      gap: 3px;
+      cursor: pointer;
+      flex: 1;
+      transition: color 0.15s;
+    }
+
+    .tab-btn.active { 
+      color: var(--accent-yellow); 
+      text-shadow: 0 0 10px rgba(245, 196, 67, 0.6);
+    }
+    .tab-icon { font-size: 19px; }
+
+    /* Модалки */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(6, 3, 14, 0.82);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      align-items: flex-end;
+    }
+
+    .modal-content {
+      background: linear-gradient(180deg, rgba(34, 24, 66, 0.95), rgba(14, 10, 28, 0.98));
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(168, 85, 247, 0.45);
+      box-shadow: 0 -10px 40px rgba(123, 44, 255, 0.3);
+      width: 100%;
+      border-radius: 24px 24px 0 0;
+      padding: 22px 16px 36px;
+      text-align: center;
+    }
+
+    .deposit-tabs-nav {
+      display: flex;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 12px;
+      gap: 4px;
+    }
+
+    .dep-tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 4px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dep-tab-btn.active {
+      background: var(--purple-grad);
+      color: #fff;
+      box-shadow: var(--purple-glow);
+    }
+
+    .dep-tab-panel {
+      display: none;
+      text-align: left;
+    }
+
+    .dep-tab-panel.active {
+      display: block;
+    }
+
+    .sbp-card {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .sbp-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .sbp-row:last-child { margin-bottom: 0; }
+    .sbp-label { color: var(--text-muted); }
+    .sbp-value { font-weight: 700; color: #fff; }
+
+    .sbp-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 11px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    .submit-sbp-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border: none;
+      padding: 13px;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+    }
+
+    .deposit-preset-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .deposit-preset-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 10px 4px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .deposit-preset-btn:active {
+      transform: scale(0.95);
+      border-color: var(--accent-yellow);
+      box-shadow: var(--gold-glow);
+    }
+
+    .legal-disclaimer {
+      font-size: 9px;
+      color: #9ca3af;
+      margin-top: 14px;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .roulette-container {
+      position: relative;
+      width: 100%;
+      height: 94px;
+      overflow: hidden;
+      margin: 15px 0 10px;
+      background: rgba(10, 6, 22, 0.85);
+      border-radius: 16px;
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      box-shadow: inset 0 0 24px rgba(123, 44, 255, 0.25), 0 0 20px rgba(168, 85, 247, 0.2);
+    }
+
+    .roulette-track {
+      display: flex;
+      position: absolute;
+      left: 0; top: 12px;
+      will-change: transform;
+    }
+
+    .roulette-item {
+      min-width: 70px;
+      height: 70px;
+      margin: 0 4px;
+      background: linear-gradient(160deg, rgba(60, 38, 120, 0.8), rgba(24, 14, 52, 0.9));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .pointer-line {
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 3px;
+      background: var(--accent-yellow);
+      transform: translateX(-50%);
+      z-index: 2;
+      box-shadow: 0 0 12px var(--accent-yellow), 0 0 24px rgba(245, 196, 67, 0.5);
+    }
+
+    .win-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Верхняя строка баланса -->
+  <div class="top-header">
+    <div class="info-card">
+      <div>
+        <div class="label">Баланс</div>
+        <div class="val" id="user-balance">Загрузка...</div>
+      </div>
+      <button class="add-btn" onclick="openDepositModal()">+</button>
+    </div>
+    <div class="info-card" onclick="goToPage(1)" style="cursor:pointer;">
+      <div>
+        <div class="label">Билеты (в магазин)</div>
+        <div class="val" id="user-tickets">🎟 ...</div>
+      </div>
+      <span style="color:var(--accent-purple); font-size:15px; font-weight:800;">➔</span>
+    </div>
+  </div>
+
+  <!-- LIVE-ЛЕНТА ВЫИГРЫШЕЙ -->
+  <div class="live-feed-wrapper">
+    <div class="live-feed-title">
+      <div class="live-feed-dot"></div>
+      <span>Live выигрыши</span>
+    </div>
+    <div class="live-feed-scroll" id="live-feed-box"></div>
+  </div>
+
+  <!-- Слайдер 3 страниц -->
+  <div class="pages-slider" id="slider">
+
+    <!-- СТРАНИЦА 1: РУЛЕТКА -->
+    <div class="page" id="page-roulette">
+      <div class="section-title">Пакет звёзд</div>
+      <div class="card">
+        <div class="star-grid">
+          <button class="star-btn" onclick="selectStars(100, this)">100 ⭐</button>
+          <button class="star-btn" onclick="selectStars(200, this)">200 ⭐</button>
+          <button class="star-btn active" onclick="selectStars(300, this)">300 ⭐</button>
+          <button class="star-btn" onclick="selectStars(1000, this)">1 000 ⭐</button>
+        </div>
+        <div class="custom-input-box">
+          <input type="number" id="custom-stars" placeholder="Другое количество" oninput="customStarsInput(this.value)" min="50" max="1000">
+          <span style="font-size:10px; color:var(--text-muted)">от 50 до 1 000</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chance-header">
+          <span class="section-title" style="margin:0;">Шанс выигрыша</span>
+          <div class="chance-badge" id="chance-display">31%</div>
+        </div>
+        <input type="range" id="chance-slider" min="1" max="75" value="31" oninput="updateChance(this.value)">
+        <div class="preset-chips">
+          <button class="chip" onclick="setChancePreset(1)">1%</button>
+          <button class="chip" onclick="setChancePreset(5)">5%</button>
+          <button class="chip" onclick="setChancePreset(15)">15%</button>
+          <button class="chip" onclick="setChancePreset(30)">30%</button>
+          <button class="chip" onclick="setChancePreset(50)">50%</button>
+          <button class="chip" onclick="setChancePreset(75)">75%</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="price-row">
+          <span style="color:var(--text-muted)">Вы платите</span>
+          <span id="price-pay" style="font-weight:700;">144.70 ₽</span>
+        </div>
+        <div class="price-row win">
+          <span>Потенциальный выигрыш</span>
+          <span id="price-win">+228.73 ₽</span>
+        </div>
+      </div>
+
+      <div class="section-title">Получатель звёзд</div>
+      <div class="card">
+        <div class="radio-group">
+          <div class="radio-item active" id="radio-self" onclick="setRecipient('self')">
+            <div class="radio-circle"></div>
+            <span>Себе — <b id="my-username">@user</b></span>
+          </div>
+          <div class="radio-item" id="radio-other" onclick="setRecipient('other')">
+            <div class="radio-circle"></div>
+            <span>Другому пользователю</span>
+          </div>
+        </div>
+        <input type="text" class="recipient-input" id="other-username" placeholder="@username получателя">
+      </div>
+
+      <button class="play-btn" id="action-btn" onclick="handleAction()">Играть</button>
+    </div>
+
+    <!-- СТРАНИЦА 2: МАГАЗИН ПОДАРКОВ ЗА БИЛЕТЫ -->
+    <div class="page" id="page-shop">
+      <div class="shop-banner">
+        <div class="shop-banner-icon">🎁</div>
+        <div class="shop-banner-text">
+          <h3>Магазин подарков</h3>
+          <p>Обменивай билеты на реальные Telegram-подарки!</p>
+        </div>
+      </div>
+
+      <div class="gifts-grid">
+        <div class="gift-card">
+          <div class="gift-emoji">💖</div>
+          <div class="gift-title">Сердечко</div>
+          <div class="gift-stars-val">15 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-heart" onclick="buyGift('Сердечко 💖', 10)">За 10 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🧸</div>
+          <div class="gift-title">Мишка</div>
+          <div class="gift-stars-val">15 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-bear" onclick="buyGift('Мишка 🧸', 10)">За 10 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🎁</div>
+          <div class="gift-title">Подарок</div>
+          <div class="gift-stars-val">25 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-box" onclick="buyGift('Подарок 🎁', 18)">За 18 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🌹</div>
+          <div class="gift-title">Роза</div>
+          <div class="gift-stars-val">25 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-rose" onclick="buyGift('Роза 🌹', 18)">За 18 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🎂</div>
+          <div class="gift-title">Торт</div>
+          <div class="gift-stars-val">50 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-cake" onclick="buyGift('Торт 🎂', 35)">За 35 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">💐</div>
+          <div class="gift-title">Букет тюльпанов</div>
+          <div class="gift-stars-val">50 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-tulips" onclick="buyGift('Букет тюльпанов 💐', 35)">За 35 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🚀</div>
+          <div class="gift-title">Ракета</div>
+          <div class="gift-stars-val">50 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-rocket" onclick="buyGift('Ракета 🚀', 35)">За 35 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">🏆</div>
+          <div class="gift-title">Кубок</div>
+          <div class="gift-stars-val">100 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-trophy" onclick="buyGift('Кубок 🏆', 70)">За 70 🎟</button>
+        </div>
+
+        <div class="gift-card">
+          <div class="gift-emoji">💍</div>
+          <div class="gift-title">Кольцо</div>
+          <div class="gift-stars-val">100 Stars в TG</div>
+          <button class="gift-buy-btn" id="btn-gift-ring" onclick="buyGift('Кольцо 💍', 70)">За 70 🎟</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- СТРАНИЦА 3: РЕФЕРАЛЫ -->
+    <div class="page" id="page-ref">
+      <div class="ref-banner">
+        <div style="font-size:34px; filter:drop-shadow(0 0 8px rgba(52,211,153,0.5));">👥</div>
+        <div>
+          <h3 style="font-size:15px; font-weight:800; margin-bottom:2px; color:#fff;">Приглашай друзей</h3>
+          <p style="font-size:11px; color:#a7f3d0;">Получай <b>10% от каждой ставки</b> друга + <b>1 🎟 билет</b> сразу!</p>
+        </div>
+      </div>
+
+      <!-- Условие подписки на канал -->
+      <div class="channel-req-card">
+        <div class="channel-req-icon">📢</div>
+        <div class="channel-req-text">
+          <h4>Условие реферала</h4>
+          <p>Чтобы бонус и приглашение засчитались, твой друг должен быть подписан на канал:</p>
+          <a href="https://t.me/RollVS" target="_blank" class="channel-btn">📢 Подписаться на @RollVS</a>
+        </div>
+      </div>
+
+      <div class="ref-stats-grid">
+        <div class="ref-stat-card">
+          <div style="font-size:11px; color:var(--text-muted);">Приглашено</div>
+          <div class="val" id="ref-count-val">0 чел.</div>
+        </div>
+        <div class="ref-stat-card">
+          <div style="font-size:11px; color:var(--text-muted);">Заработано</div>
+          <div class="val" id="ref-earned-val">0.00 ₽</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title" style="margin-top:0;">Твоя пригласительная ссылка</div>
+        <div class="ref-link-box" id="ref-link-display">Загрузка ссылки...</div>
+        <button class="play-btn" style="margin-top:4px;" onclick="shareReferralLink()">🔗 Поделиться ссылкой</button>
+      </div>
+
+      <div class="card" style="font-size:12px; color:#d8b4fe; line-height:1.4;">
+        🎁 <b>Бонус для друга:</b> Твой друг получит <b>+10.00 ₽</b> бонуса на баланс при своём первом пополнении!
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Нижний таббар -->
+  <div class="tabbar">
+    <button class="tab-btn active" id="tab-0" onclick="goToPage(0)">
+      <span class="tab-icon">🎲</span>
+      <span>Рулетка</span>
+    </button>
+    <button class="tab-btn" id="tab-1" onclick="goToPage(1)">
+      <span class="tab-icon">🎁</span>
+      <span>Магазин</span>
+    </button>
+    <button class="tab-btn" id="tab-2" onclick="goToPage(2)">
+      <span class="tab-icon">👥</span>
+      <span>Рефералы</span>
+    </button>
+  </div>
+
+  <!-- Модалка пополнения -->
+  <div class="modal-overlay" id="deposit-modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h3 style="font-size:17px; font-weight:800; color:#fff;">Пополнение баланса</h3>
+        <button onclick="closeDepositModal()" style="background:none; border:none; color:#9ca3af; font-size:22px; cursor:pointer;">✕</button>
+      </div>
+
+      <div class="deposit-tabs-nav">
+        <button class="dep-tab-btn active" id="dep-nav-sbp" onclick="switchDepTab('sbp')">💳 СБП / Карта</button>
+        <button class="dep-tab-btn" id="dep-nav-stars" onclick="switchDepTab('stars')">⭐ Stars</button>
+        <button class="dep-tab-btn" id="dep-nav-crypto" onclick="switchDepTab('crypto')">💎 CryptoBot</button>
+      </div>
+
+      <!-- Вкладка СБП -->
+      <div class="dep-tab-panel active" id="dep-panel-sbp">
+        <div class="sbp-card">
+          <div class="sbp-row">
+            <span class="sbp-label">Номер телефона:</span>
+            <span class="sbp-value" style="color:var(--accent-yellow);">+7 (949) 502-55-73</span>
+          </div>
+          <div class="sbp-row">
+            <span class="sbp-label">Банк:</span>
+            <span class="sbp-value">ПСБ / Сбербанк</span>
+          </div>
+          <div class="sbp-row">
+            <span class="sbp-label">Получатель:</span>
+            <span class="sbp-value">Егор С.</span>
+          </div>
+          <div class="sbp-row">
+            <span class="sbp-label">Комментарий к переводу:</span>
+            <span class="sbp-value" id="sbp-user-id-box">ID: ...</span>
+          </div>
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+          Введите точную сумму перевода, переведите её в мобильном банке по СБП и нажмите «Я оплатил»:
+        </div>
+        <input type="number" class="sbp-input" id="sbp-amount-input" value="300" min="50" placeholder="Сумма в рублях (₽)">
+        <button class="submit-sbp-btn" onclick="submitSbpDeposit()">Я оплатил</button>
+      </div>
+
+      <!-- Вкладка Stars -->
+      <div class="dep-tab-panel" id="dep-panel-stars">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+          Выберите количество звёзд для пополнения через Telegram:
+        </div>
+        <div class="deposit-preset-grid">
+          <button class="deposit-preset-btn" onclick="submitStarsInvoice(50)">50 ⭐</button>
+          <button class="deposit-preset-btn" onclick="submitStarsInvoice(100)">100 ⭐</button>
+          <button class="deposit-preset-btn" onclick="submitStarsInvoice(250)">250 ⭐</button>
+          <button class="deposit-preset-btn" onclick="submitStarsInvoice(500)">500 ⭐</button>
+        </div>
+      </div>
+
+      <!-- Вкладка CryptoBot -->
+      <div class="dep-tab-panel" id="dep-panel-crypto">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">
+          Моментальная оплата в криптовалюте или картой через CryptoBot:
+        </div>
+        <div class="deposit-preset-grid">
+          <button class="deposit-preset-btn" onclick="submitCryptoBotInvoice(100)">100 ₽</button>
+          <button class="deposit-preset-btn" onclick="submitCryptoBotInvoice(300)">300 ₽</button>
+          <button class="deposit-preset-btn" onclick="submitCryptoBotInvoice(500)">500 ₽</button>
+          <button class="deposit-preset-btn" onclick="submitCryptoBotInvoice(1000)">1000 ₽</button>
+        </div>
+      </div>
+
+      <div class="legal-disclaimer">
+        Пополняя баланс, вы соглашаетесь с условиями сервиса Lucky Stars. Баланс выражен в виртуальных баллах для покупки цифрового контента и не подлежит возврату или обмену на фиатные средства.
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка рулетки со скоростной анимацией (1.8 сек) -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-content">
+      <h3 id="modal-title" style="font-size:17px; font-weight:800; color:#fff;">Крутим рулетку... 🎲</h3>
+      <div class="roulette-container" id="roulette-box">
+        <div class="pointer-line"></div>
+        <div class="roulette-track" id="track"></div>
+      </div>
+      <div id="chance-sub" style="color:#c084fc; font-size:12px; font-weight:600;">шанс 31%</div>
+
+      <div class="win-screen" id="win-screen">
+        <div style="font-size:55px; margin-bottom:10px;" id="win-icon">⭐</div>
+        <h2 style="font-size:20px; font-weight:800; margin-bottom:6px; color:#fff;" id="win-heading">Выигрыш!</h2>
+        <div style="font-size:20px; color:var(--accent-yellow); font-weight:800; margin-bottom:6px; text-shadow:0 0 12px rgba(245,196,67,0.5);" id="win-stars-count">300 ⭐</div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:18px;" id="win-target-info">Заявка отправлена администратору</p>
+        <button class="play-btn" style="width:100%" onclick="closeModal()">Готово</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://lucky-stars-backend.onrender.com";
+
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+    try { if (tg) { tg.setHeaderColor('#0b0914'); tg.setBackgroundColor('#0b0914'); } } catch (e) {}
+
+    const tgUser = tg?.initDataUnsafe?.user;
+    const userId = tgUser?.id || 10001;
+    const myUsername = tgUser?.username ? '@' + tgUser.username : (tgUser?.first_name || '@player');
+
+    document.getElementById('my-username').innerText = myUsername;
+    document.getElementById('sbp-user-id-box').innerText = "ID: " + userId;
+
+    let balance = 0.00;
+    let tickets = 0;
+    let currentStars = 300;
+    let currentChance = 31;
+    let recipientType = 'self';
+    const starPriceRub = 1.95;
+    let calculatedCost = 0;
+    let isSpinning = false;
+    let currentPage = 0;
+
+    // Реферальная ссылка
+    const refLink = `https://t.me/rollvs_bot?start=ref_${userId}`;
+    document.getElementById('ref-link-display').innerText = refLink;
+
+    function shareReferralLink() {
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("🎁 Заходи в Lucky Stars и забирай Telegram Stars с повышенным шансом! Подпишись на @RollVS и получай +10 ₽ на первый депозит:")}`;
+      if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(shareUrl);
+      } else {
+        window.open(shareUrl, '_blank');
+      }
+    }
+
+    function switchDepTab(tabName) {
+      document.querySelectorAll('.dep-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.dep-tab-panel').forEach(p => p.classList.remove('active'));
+
+      document.getElementById(`dep-nav-${tabName}`).classList.add('active');
+      document.getElementById(`dep-panel-${tabName}`).classList.add('active');
+    }
+
+    // Свайп между 3 страницами
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    document.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, {passive: true});
+
+    function handleSwipe() {
+      const diff = touchStartX - touchEndX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0 && currentPage < 2) {
+          goToPage(currentPage + 1);
+        } else if (diff < 0 && currentPage > 0) {
+          goToPage(currentPage - 1);
+        }
+      }
+    }
+
+    function goToPage(pageIndex) {
+      currentPage = pageIndex;
+      const slider = document.getElementById('slider');
+      slider.style.transform = `translateX(-${pageIndex * 33.333}%)`;
+
+      [0, 1, 2].forEach(i => {
+        document.getElementById(`tab-${i}`).classList.toggle('active', pageIndex === i);
+      });
+    }
+
+    async function loadLiveFeed() {
+      try {
+        const res = await fetch(`${API_URL}/api/live-feed`);
+        if (res.ok) {
+          const drops = await res.json();
+          const box = document.getElementById('live-feed-box');
+          box.innerHTML = drops.map(d => `
+            <div class="live-card">
+              <div class="live-card-icon">${d.icon || '⭐'}</div>
+              <div class="live-card-title">${d.title}</div>
+              <div class="live-card-user">${d.user}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {}
+    }
+
+    setInterval(loadLiveFeed, 7000);
+    loadLiveFeed();
+
+    async function loadUserProfile(retries = 5) {
+      try {
+        const res = await fetch(`${API_URL}/api/user/${userId}?username=${encodeURIComponent(myUsername)}`);
+        if (res.ok) {
+          const data = await res.json();
+          balance = data.balance;
+          tickets = data.tickets || 0;
+          document.getElementById('user-balance').innerText = balance.toFixed(2) + ' ₽';
+          document.getElementById('user-tickets').innerText = '🎟 ' + tickets;
+          
+          document.getElementById('ref-count-val').innerText = (data.ref_count || 0) + ' чел.';
+          document.getElementById('ref-earned-val').innerText = (data.ref_earned || 0).toFixed(2) + ' ₽';
+
+          updateShopButtons();
+          recalc();
+          return;
+        }
+      } catch (err) {}
+
+      if (retries > 0) {
+        setTimeout(() => loadUserProfile(retries - 1), 3000);
+      } else {
+        document.getElementById('user-balance').innerText = '0.00 ₽';
+        document.getElementById('user-tickets').innerText = '🎟 0';
+      }
+    }
+
+    loadUserProfile();
+
+    const giftsCatalog = [
+      { id: 'btn-gift-heart', cost: 10 },
+      { id: 'btn-gift-bear', cost: 10 },
+      { id: 'btn-gift-box', cost: 18 },
+      { id: 'btn-gift-rose', cost: 18 },
+      { id: 'btn-gift-cake', cost: 35 },
+      { id: 'btn-gift-tulips', cost: 35 },
+      { id: 'btn-gift-rocket', cost: 35 },
+      { id: 'btn-gift-trophy', cost: 70 },
+      { id: 'btn-gift-ring', cost: 70 }
+    ];
+
+    function updateShopButtons() {
+      giftsCatalog.forEach(g => {
+        const btn = document.getElementById(g.id);
+        if (btn) {
+          if (tickets >= g.cost) {
+            btn.classList.add('can-afford');
+            btn.innerText = `Купить за ${g.cost} 🎟`;
+          } else {
+            btn.classList.remove('can-afford');
+            btn.innerText = `За ${g.cost} 🎟`;
+          }
+        }
+      });
+    }
+
+    async function buyGift(giftName, ticketCost) {
+      if (tickets < ticketCost) {
+        alert(`Не хватает билетов! Нужно ${ticketCost} 🎟`);
+        return;
+      }
+
+      if (!confirm(`Купить "${giftName}" за ${ticketCost} билетов?`)) return;
+
+      try {
+        const res = await fetch(`${API_URL}/api/shop/buy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            username: myUsername,
+            gift_name: giftName,
+            ticket_cost: ticketCost
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          tickets = data.new_tickets;
+          document.getElementById('user-tickets').innerText = '🎟 ' + tickets;
+          updateShopButtons();
+          loadLiveFeed();
+          alert(`🎉 Заказ на "${giftName}" оформлен! Администратор отправит подарок вам в Telegram.`);
+        } else {
+          alert(data.detail || "Ошибка");
+        }
+      } catch (e) {
+        alert("Ошибка сети");
+      }
+    }
+
+    function selectStars(stars, btn) {
+      currentStars = stars;
+      document.getElementById('custom-stars').value = '';
+      document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      recalc();
+    }
+
+    function customStarsInput(val) {
+      let num = parseInt(val) || 100;
+      if (num > 1000) num = 1000;
+      currentStars = num;
+      document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+      recalc();
+    }
+
+    function updateChance(val) {
+      currentChance = parseInt(val);
+      document.getElementById('chance-display').innerText = currentChance + '%';
+      document.getElementById('chance-sub').innerText = 'шанс ' + currentChance + '%';
+      recalc();
+    }
+
+    function setChancePreset(val) {
+      document.getElementById('chance-slider').value = val;
+      updateChance(val);
+    }
+
+    function setRecipient(type) {
+      recipientType = type;
+      const selfItem = document.getElementById('radio-self');
+      const otherItem = document.getElementById('radio-other');
+      const input = document.getElementById('other-username');
+
+      if (type === 'self') {
+        selfItem.classList.add('active');
+        otherItem.classList.remove('active');
+        input.style.display = 'none';
+      } else {
+        otherItem.classList.add('active');
+        selfItem.classList.remove('active');
+        input.style.display = 'block';
+      }
+    }
+
+    function recalc() {
+      let fullCost = currentStars * starPriceRub;
+      calculatedCost = (fullCost * (currentChance / 100)) * 1.05;
+      
+      document.getElementById('price-pay').innerText = calculatedCost.toFixed(2) + ' ₽';
+      document.getElementById('price-win').innerText = '+' + (fullCost - calculatedCost).toFixed(2) + ' ₽';
+
+      const btn = document.getElementById('action-btn');
+      if (balance < calculatedCost) {
+        btn.innerText = 'Пополнить баланс';
+        btn.classList.add('deposit-mode');
+      } else {
+        btn.innerText = 'Играть';
+        btn.classList.remove('deposit-mode');
+      }
+    }
+
+    function openDepositModal() { document.getElementById('deposit-modal').style.display = 'flex'; }
+    function closeDepositModal() { document.getElementById('deposit-modal').style.display = 'none'; }
+
+    async function submitSbpDeposit() {
+      const amount = parseFloat(document.getElementById('sbp-amount-input').value);
+      if (isNaN(amount) || amount < 50) {
+        alert("Минимальная сумма пополнения по СБП — 50 ₽!");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/deposit/sbp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            username: myUsername,
+            amount: amount
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ Заявка отправлена!\n\nСумма: ${amount} ₽\nПосле подтверждения перевода Егором С., ваш баланс в игре пополнится!`);
+          closeDepositModal();
+        } else {
+          alert(data.detail || "Произошла ошибка при отправке заявки.");
+        }
+      } catch (err) {
+        alert("Не удалось связаться с сервером.");
+      }
+    }
+
+    async function submitStarsInvoice(starsCount) {
+      try {
+        const response = await fetch(`${API_URL}/api/deposit/stars-invoice`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, stars: starsCount })
+        });
+        const data = await response.json();
+        closeDepositModal();
+        if (data.invoice_link && tg && tg.openInvoice) {
+          tg.openInvoice(data.invoice_link, (status) => {
+            if (status === 'paid') {
+              alert("Оплата прошла успешно!");
+              setTimeout(loadUserProfile, 1000);
+            }
+          });
+        }
+      } catch (err) { alert("Ошибка сети"); }
+    }
+
+    async function submitCryptoBotInvoice(amountRub) {
+      try {
+        const response = await fetch(`${API_URL}/api/deposit/cryptobot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, amount_rub: amountRub })
+        });
+        const data = await response.json();
+        closeDepositModal();
+        if (data.pay_url) {
+          if (tg && tg.openLink) tg.openLink(data.pay_url);
+          else window.open(data.pay_url, '_blank');
+        }
+      } catch (err) { alert("Ошибка связи"); }
+    }
+
+    function handleAction() {
+      if (isSpinning) return;
+      if (balance < calculatedCost) openDepositModal();
+      else startInstantSpin();
+    }
+
+    // МГНОВЕННЫЙ ЗАПУСК И БЫСТРАЯ ОСТАНОВКА (1.8 секунды)
+    async function startInstantSpin() {
+      if (currentStars > 1000) {
+        alert("Максимальный размер выигрыша — 1 000 ⭐");
+        return;
+      }
+
+      isSpinning = true;
+
+      const modal = document.getElementById('modal');
+      const track = document.getElementById('track');
+      const winScreen = document.getElementById('win-screen');
+      const rouletteBox = document.getElementById('roulette-box');
+
+      modal.style.display = 'flex';
+      winScreen.style.display = 'none';
+      rouletteBox.style.display = 'block';
+      document.getElementById('modal-title').innerText = 'Крутим рулетку... 🎲';
+
+      track.style.transition = 'none';
+      track.style.transform = 'translateX(0)';
+      track.innerHTML = '';
+
+      const stopIndex = 25;
+      for (let i = 0; i < 40; i++) {
+        const item = document.createElement('div');
+        item.className = 'roulette-item';
+        item.innerText = Math.random() > 0.45 ? '⭐' : '🎟';
+        track.appendChild(item);
+      }
+
+      // Стремительный динамичный разгон и торможение за 1.8 секунды
+      const targetX = -(stopIndex * 78) + (window.innerWidth / 2 - 39);
+      setTimeout(() => {
+        track.style.transition = 'transform 1.8s cubic-bezier(0.1, 0.9, 0.2, 1)';
+        track.style.transform = `translateX(${targetX}px)`;
+      }, 20);
+
+      let targetRecipient = recipientType === 'self' 
+        ? myUsername 
+        : (document.getElementById('other-username').value.trim() || myUsername);
+
+      let isWinResult = false;
+
+      try {
+        const response = await fetch(`${API_URL}/api/spin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            username: myUsername,
+            stars: currentStars,
+            chance: currentChance,
+            recipient: targetRecipient
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          alert(data.detail || "Ошибка");
+          modal.style.display = 'none';
+          isSpinning = false;
+          recalc();
+          return;
+        }
+
+        isWinResult = data.is_win;
+        balance = data.new_balance;
+        tickets = data.new_tickets;
+        document.getElementById('user-balance').innerText = balance.toFixed(2) + ' ₽';
+        document.getElementById('user-tickets').innerText = '🎟 ' + tickets;
+        updateShopButtons();
+        recalc();
+
+        // Ставим точный приз на ячейку остановки
+        if (track.children[stopIndex]) {
+          track.children[stopIndex].innerText = isWinResult ? '⭐' : '🎟';
+        }
+
+      } catch (err) {
+        modal.style.display = 'none';
+        alert("Ошибка сети");
+        isSpinning = false;
+        recalc();
+        return;
+      }
+
+      // Ровно через 1.9 секунды показываем экран победы / билета
+      setTimeout(() => {
+        isSpinning = false;
+        rouletteBox.style.display = 'none';
+        document.getElementById('modal-title').innerText = '';
+
+        if (isWinResult) {
+          document.getElementById('win-icon').innerText = '⭐';
+          document.getElementById('win-heading').innerText = 'Выигрыш!';
+          document.getElementById('win-stars-count').innerText = currentStars + ' ⭐';
+          document.getElementById('win-target-info').innerText = 'Заявка отправлена администратору';
+          loadLiveFeed();
+        } else {
+          document.getElementById('win-icon').innerText = '🎟';
+          document.getElementById('win-heading').innerText = 'Получен билет!';
+          document.getElementById('win-stars-count').innerText = '+1 Билет 🎟';
+          document.getElementById('win-target-info').innerText = 'Билет добавлен на ваш баланс!';
+        }
+
+        winScreen.style.display = 'flex';
+      }, 1900);
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+      recalc();
+    }
+  </script>
+</body>
+</html>
