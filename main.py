@@ -65,7 +65,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 STARSFLOW_TOKEN = os.getenv("STARSFLOW_TOKEN", "").strip()
 CRYPTOBOT_TOKEN = os.getenv("CRYPTOBOT_TOKEN", "").strip()
 
-WEBAPP_URL = "https://lucky-stars-backend.onrender.com"
+WEBAPP_URL = "https://lucky-stars-backend.onrender.com?v=2"
 BASE_URL = "https://lucky-stars-backend.onrender.com"
 
 # КУРСЫ ВАЛЮТ И ЛИМИТЫ
